@@ -22,22 +22,21 @@ const getRoomWithId = (rooms, id) =>  rooms.reduce((acc, val) => (val && val.id 
 const randomToken = () => Math.random().toString(32).substring(2,12);
 const createRoomId = (rooms, id) => (!id || getRoomWithId(rooms, id)) ? createRoomId(rooms, randomToken()) : id;
 const allowAccess = (room, token) => !room.token || room.token === token;
-const activeRooms = (rooms, lifespan) => rooms.filter(room => Math.abs(+room.created - +new Date())/(1000 * 60 * 60 * 24) < lifespan);
-const getRooms =(file) => fs.existsSync(file) ? fs.readFileSync(file,"utf-8") : null;
+const dayDifference = (date1, date2) => ~~(Math.abs(+date2 - +date1) / (1000 * 60 * 60 * 24));
+const activeRooms = (rooms, lifespan) => rooms.filter(room => dayDifference(new Date(rooms.created),new Date()) < lifespan);
+const loadRooms =(file) => fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,"utf-8")).map(room => {room.created = new Date(room.created); return room}) : null;
 const saveRooms = (file, rooms) => fs.writeFileSync(file, JSON.stringify(rooms),"utf-8");
 
 // model
-let rooms = getRooms("rooms.json") || [];
+let rooms = loadRooms("rooms.json") || [];
 
 // middleware for each call
 app.use(function(req, res, next){
-    let url = req.url;
-    let status = res.statusCode;
-    // monitor every request and result
-    console.log(url,status);
     // remove rooms that are older than 7 days
+    console.log('loaded', loadRooms("rooms.json"));
+    console.log(rooms);
     rooms = activeRooms(rooms, 7);
-    console.log(getRooms("rooms.json"));
+    console.log(rooms);
     // carry on
     next();
 });
@@ -162,6 +161,7 @@ app.post('/name', function(req, res){
 
 // websocket stuff
 app.ws('/enter/:id', function(ws, req){
+    console.log('triggered ws route');
     let id = req.params.id || req.query.id || req.body.id;
     let token = req.params.token || req.query.token || req.body.token;
     let room = getRoomWithId(rooms, id);
@@ -182,8 +182,9 @@ app.ws('/enter/:id', function(ws, req){
 });
 
 app.ws('/chat/:id', function(ws, req){
-    ws.on('message', function(socket){
-
+    ws.on('connection', function(socket){
+        console.log('triggered');
+        socket.emit('a user connected to the chat');
     })
 });
 

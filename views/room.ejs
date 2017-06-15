@@ -10,10 +10,21 @@
     <main>
         <div class="online-users">
             Zur Zeit sind online:
-            <% for(var i = 0; i < room.users.length; i++){ %>
-                <li> <%= room.users[i]%> </li>
+            <% var users = room.users.sort(function(a,b){ return a.localeCompare(b)}); %>
+            <% for(var i = 0; i < users.length; i++){ %>
+                <li> <%= users[i]%> </li>
             <% } %>
         </div>
     </main>
+    <script>
+        var socket = io.connect('127.0.0.1:8080/chat/<%=room.id%>?token=<%=room.token%>',{reconnect: true});
+        socket.on('connect', function () {
+            console.log("socket connected");
+            socket.emit('message',{
+                user: "<%= user %>",
+                message: "(connected)"
+            });
+        });
+    </script>
     </body>
 </hmtl>
