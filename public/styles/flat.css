@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css?family=Pacifico|Source+Sans+Pro|Lobster|Montserrat');
+
+
+*{
+    margin: 0;
+    padding: 0;
+    font-size: 1em;
+}
+
+html, body{
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    font-family: 'Source Sans Pro', sans-serif;
+    background-color: rgb(240,235,235);
+}
+
+h1, h2, h3, h4, h5, h6{
+    text-transform: capitalize;
+    font-variant: small-caps;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.centered{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    vertical-align: center;
+}
+
+.headline{
+    border-top: solid black 1px;
+    border-bottom: solid black 1px;
+    padding: 0.1em 0.2em;
+    font-size: 3em;
+    text-align: center;
+}
+
+.page-header, .navigation{
+    min-width: 100vw;
+    margin: 0;
+    width: 100%;
+}
+
+.navigation>ul{
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.1em 1em;
+}
+
+.navigation>ul>li{
+    display: flex;
+    height: 100%;
+    align-items: center;
+    text-align: center;
+    min-width: 7%;
+}
+
+.textinput{
+    background-color: transparent;
+    border: none;
+    border-bottom: solid black thin;
+    margin: 1em 0;
+    text-align: right;
+    font-family: Arial, sans-serif;
+}
+
+.textinput:active, .textinput:focus{
+    outline: none;
+    border-bottom-style: dashed;
+}
+
+.button{
+    text-align: center;
+    overflow: hidden;
+    padding: 0.5em;
+    border-radius: 0;
+    border: none;
+    outline: none;
+    box-shadow: 0 0 5px rgba(20,20,20,0.5);
+    transition-duration: 1s;
+    position: relative;
+}
+
+.button:active{
+    cursor: pointer;
+}
+
+.button::after{
+    display: block;
+    opacity: 0.8;
+    content: "";
+    background-color: rgba(255,255,255,0.8);
+    position: absolute;
+    top: 1em;
+    left: -2em;
+    transform: rotate(-30deg);
+    width: 1em;
+    height: 6em;
+    transition: transform ease 1s, opacity cubic-bezier(0.1,0.1,0.7,1) 0.9s;
+}
+
+.button:active::after{
+    opacity: 0;
+    transform: rotate(-30deg) translateX(5em);
+}
+
+.button:active, .button:focus{
+    box-shadow: 0 0 1px rgba(20,20,20,0.1);
+}
+
+.button:hover{
+    box-shadow: 0 0 1px rgba(20,20,20,0.4);
+}
+
+textarea.textinput{
+    border: solid black thin;
+    padding: 0.1em;
+}
+
+a{
+    text-decoration: none;
+    color: rgb(70,160,195);
+}
+
+.light{
+    font-family: "Pacifico", serif;
+    font-size: 0.9em;
+    font-weight: lighter;
+}
+
+code{
+    color: rgb(114,198,128);
+    font-family: "Source Code Pro", monospace;
+    padding: 1em 0.5em;
+}
+
+.gallery{
+    display: flex;
+    flex-flow: column wrap;
+    width: 100%;
+    padding: 1em;
+    margin: 1em 0.2em;
+}
+
+.card{
+    width: 27em;
+    min-height: 30em;
+    margin: 2em;
+    box-shadow: 0 0 5px rgba(20,20,20,0.2);
+}
+
+.card-header, .card>header{
+    border: none;
+    border-bottom: solid rgba(20,20,20,0.2) thin;
+}
+
+.card-body{
+    font-size: 0.8em;
+}
+
+.card-body::first-letter, .card-body p::first-letter, .card-body article::first-letter, .card-body div::first-letter{
+    text-transform: uppercase;
+    font-size: 1.1em;
+}
+
+.card>*{
+    padding: 1em;
+}
+
+table{
+    border: none
+}
+
+tr>td{
+    min-width: 10em;
+    min-height: 3em;
+    padding: 1em 0.5em;
+}
+
+hr{
+    margin: 1em 0.1em;
+}

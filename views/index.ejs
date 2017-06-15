@@ -1,0 +1,109 @@
+<!doctype html>
+<hmtl>
+    <head>
+        <% include partials/resources.ejs %>
+        <title> Testseite </title>
+    </head>
+    <body>
+    <% include partials/navigation.ejs %>
+    <% include partials/header.ejs %>
+    <main class="gallery">
+        <div class="card room-list">
+            <div class="card-header">
+                <h2> existierende Räume </h2>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <% var roomnumber = rooms.length;%>
+                    <% for(var i = 0; i < roomnumber; i++){ %>
+                    <% var room = rooms[i]; %>
+                    <li class="room">
+                        <div>
+                            <h2>
+                                <%= room.name %>
+                            </h2>
+                            <div>
+                                <%= room.description %> - erstellt am <%= room.created.getDate()+"."+(room.created.getMonth()+1)+"."+room.created.getFullYear() %>
+                            </div>
+                            <div>
+                                <a class="room-link" href="/name?id=<%= room.id %>&token="> enter </a>
+                            </div>
+                        </div>
+                        <hr>
+                    </li>
+                    <% }%>
+                    <% if(roomnumber === 0){ %>
+                    <p> Es sind zur Zeit keine Räume vorhanden </p>
+                    <% } %>
+                </ul>
+            </div>
+        </div>
+        <div class="card room-creation">
+            <div class="card-header">
+                <h2> Neuen Raum erstellen </h2>
+            </div>
+            <div class="card-body">
+                <form action="/room" method="post">
+                    <label>Raumname:</label>
+                    <input type="text" class="textinput" id="room-creation-name" name="name" placeholder="Name deines Raums"><br>
+                    <label>Beschreibung:</label>
+                    <input type="text" class="textinput" id="room-creation-description" name="description" placeholder="Beschreibung (optional)"><br>
+                    <fieldset class="radioset">
+                        <input type="radio" class="radioinput" id="room-public" name="access" value="public" checked> öffentlich<br>
+                        <input type="radio" class="radioinput" id="room-private" name="access" value="private"> passwort-geschützt<br>
+                    </fieldset>
+                    <button class="button" type="submit" id="room-create"> Erstellen </button>
+                </form>
+            </div>
+        </div>
+        <div class="card room-stats">
+            <div class="card-header">
+                <h2> Statistiken </h2>
+            </div>
+            <div>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>
+                                Vollster Raum
+                            </td>
+                            <td>
+                                <%
+                                var fullest = rooms.reduce(function(fullest, room){
+                                    if(room.users.length > fullest.userNumber){
+                                        fullest.name = room.name;
+                                        fullest.userNumber = room.users.length;
+                                    }
+                                    return fullest;
+                                },{name: 'keiner', userNumber: 0});
+                                %>
+                                <%= fullest.name %> mit zur Zeit <%= fullest.userNumber %> Nutzern
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Online Nutzer
+                            </td>
+                            <td>
+                                <% var totalOnline = rooms.reduce(function(userNumber, room){
+                                    return userNumber+room.users.length;
+                                }, 0);
+                                %>
+                                Zur Zeit sind <%= totalOnline %> Nutzer online
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Raumanzahl
+                            </td>
+                            <td>
+                                Es existieren im Moment <%= rooms.length %> Räume
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    </body>
+</hmtl>

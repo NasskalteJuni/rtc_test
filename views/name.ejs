@@ -1,0 +1,52 @@
+<!doctype html>
+<hmtl>
+    <head>
+        <% include partials/resources.ejs %>
+        <title> Testseite </title>
+    </head>
+    <body>
+    <% include partials/navigation.ejs %>
+    <% include partials/header.ejs %>
+    <main>
+        <div class="name-box">
+            <% if(isCreator){ %>
+            <div>
+                Der Raum wurde erstellt.
+                <% if(room.token){ %>
+                Das Nutzertoken ist <%= room.token%>. <br>
+                <% } %>
+                Sende diesen Link an andere Personen um sie einzuladen: <br><br>
+                <code id="share">
+                    http://127.0.0.1:8080/name?id=<%=room.id%>&token=<%=room.token%>
+                </code>
+                <button id="copy-button" class="button" data-clipboard-target="#share">
+                    copy link
+                </button>
+                <script>
+                    var button = document.getElementById('copy-button')
+                    var clipboard = new Clipboard(button);
+                    clipboard.on('success', function(e) {
+                        button.innerHTML = "kopiert!";
+                        e.clearSelection();
+                    });
+                </script>
+                <br><br>
+            </div>
+            <% }else{ %>
+            <div>
+                Im Raum sind zurzeit <%= room.users ? room.users.length : 0 %> Nutzer
+            </div>
+            <% } %>
+            <form action="name?room=<%= room.id %>" method="post">
+                <input type="text" class="textinput" placeholder="dein Nutzername" name="name">
+                <% if( !token && room.token ){ %>
+                <input type="text" class="textinput" placeholder="Token" name="token">
+                <% }else{ %>
+                <input type="hidden" name="token" value="<%= token %>">
+                <% } %>
+                <button type="submit" class="button"> weiter </button>
+            </form>
+        </div>
+    </main>
+    </body>
+</hmtl>

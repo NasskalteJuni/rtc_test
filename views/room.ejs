@@ -1,0 +1,19 @@
+<!doctype html>
+<hmtl>
+    <head>
+        <% include partials/resources.ejs %>
+        <title> Testseite </title>
+    </head>
+    <body>
+    <% include partials/navigation.ejs %>
+    <% include partials/header.ejs %>
+    <main>
+        <div class="online-users">
+            Zur Zeit sind online:
+            <% for(var i = 0; i < room.users.length; i++){ %>
+                <li> <%= room.users[i]%> </li>
+            <% } %>
+        </div>
+    </main>
+    </body>
+</hmtl>
