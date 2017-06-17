@@ -60,11 +60,7 @@ main.gallery{
     padding: 0;
 }
 
-.online-users{
-    list-style: none;
-}
-
-.online-users>li{
+.online-users li{
     display: inline-block;
     padding: 0.2em 0.5em;
     margin: 0 0.2em;
@@ -73,4 +69,22 @@ main.gallery{
     background-color: rgb(100,100,220);
     color: white;
     border-radius: 0.5em;
+}
+
+.chat-messages li.user-message{
+    min-height: 4em;
+}
+
+li.user-message>.text{
+    font-size: 1em;
+}
+
+li.user-message>.time, li.user-message>.user{
+    display: inline-block;
+    font-size: 0.9em;
+}
+
+li.user-message>.user::before{
+    content: "by ";
+    color: rgb(200,200,200);
 }

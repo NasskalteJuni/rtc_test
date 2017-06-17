@@ -10,21 +10,90 @@
     <main>
         <div class="online-users">
             Zur Zeit sind online:
+            <ul id="user-list" class="undecorated">
             <% var users = room.users.sort(function(a,b){ return a.localeCompare(b)}); %>
             <% for(var i = 0; i < users.length; i++){ %>
                 <li> <%= users[i]%> </li>
             <% } %>
+            </ul>
+        </div>
+        <div class="chat-messages">
+            <ul id="message-list" class="undecorated">
+
+            </ul>
+        </div>
+        <div>
+            <input type="text" placeholder="Nachricht (Enter)" class="textinput" id="message-field">
         </div>
     </main>
     <script>
-        var socket = io.connect('127.0.0.1:8080/chat/<%=room.id%>?token=<%=room.token%>',{reconnect: true});
-        socket.on('connect', function () {
-            console.log("socket connected");
-            socket.emit('message',{
+        (function(){
+        var dateformat = function(date){
+            var to2Digits = function(number){
+                return number < 10 ? "0"+number : number;
+            }
+            if(typeof date === "string"){
+                date = new Date(date);
+            }
+            var day = date.getDay(), month = date.getMonth() +1, year = date.getFullYear();
+            return to2Digits(day)+"."+to2Digits(month)+"."+year;
+        }
+        var url = 'ws://<%= server.address %>:<%= server.port %>/chat/<%=room.id%>'
+        var socketConnection = new WebSocket(url);
+        socketConnection.onopen = function(){
+            socketConnection.send(JSON.stringify({
                 user: "<%= user %>",
-                message: "(connected)"
+                message: "the user <%= user %> entered the room <%= room.name %>",
+                type: 'enter-message',
+                time: new Date()
+            }));
+
+            $('#message-field').on('keypress', function(e){
+                if(e.which === 13 && this.value && this.value.trim()){
+                    var userMessage = {
+                        user: "<%= user %>",
+                        message: this.value,
+                        type: 'user-message',
+                        time: new Date()
+                    }
+                    socketConnection.send(JSON.stringify(userMessage));
+                    this.value = "";
+                }
             });
-        });
+        }
+
+        socketConnection.onerror = function(event){
+            console.warn(event.data);
+        }
+
+        socketConnection.onmessage = function(event){
+            if(event.data){
+                data = JSON.parse(event.data);
+                console.log(data);
+                // handle text messages
+                if(data.type === 'user-message'){
+                    $('#message-list').append($('<li class="user-message card"><div class="text">'+data.message+'</div><div class="time">'+dateformat(data.time)+'</div><div class="user">'+data.user+'</div></li>'));
+                }
+
+                // handle rtc sdp connections
+                if(data.type === 'client-refresh' && data.target === 'users'){
+                    (console.log(data.users));
+                    $('#user-list').html(data.users.map(function(user){ return '<li>'+user+'</li>'}));
+                }
+            }
+
+        }
+
+        $(window).on('beforeunload', function(){
+            socketConnection.send(JSON.stringify({
+                user: "<%= user %>",
+                message: "user <%= user %> has left the room <%= room.name %>",
+                type: 'leave-message',
+                time: new Date()
+            }))
+        })
+
+        })();
     </script>
     </body>
 </hmtl>

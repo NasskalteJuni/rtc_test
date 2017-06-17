@@ -185,3 +185,9 @@ tr>td{
 hr{
     margin: 1em 0.1em;
 }
+
+.undecorated{
+    list-style: none;
+    text-decoration: none;
+    font-style: normal;
+}
