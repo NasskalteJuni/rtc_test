@@ -17,6 +17,14 @@
             <% } %>
             </ul>
         </div>
+        <div class="video-streams">
+            <ul id="video-list" class="undecorated">
+
+            </ul>
+        </div>
+        <div class="video-control">
+            <button type="button" id="call-button" class="button"> Anrufen </button>
+        </div>
         <div class="chat-messages">
             <ul id="message-list" class="undecorated">
 
@@ -28,69 +36,132 @@
     </main>
     <script>
         (function(){
-        var dateformat = function(date){
-            var to2Digits = function(number){
-                return number < 10 ? "0"+number : number;
-            }
-            if(typeof date === "string"){
-                date = new Date(date);
-            }
-            var day = date.getDay(), month = date.getMonth() +1, year = date.getFullYear();
-            return to2Digits(day)+"."+to2Digits(month)+"."+year;
-        }
-        var url = 'ws://<%= server.address %>:<%= server.port %>/chat/<%=room.id%>'
-        var socketConnection = new WebSocket(url);
-        socketConnection.onopen = function(){
-            socketConnection.send(JSON.stringify({
-                user: "<%= user %>",
-                message: "the user <%= user %> entered the room <%= room.name %>",
-                type: 'enter-message',
-                time: new Date()
-            }));
+        var url = 'ws://<%= server.address %>:<%= server.port %>/chat/<%=room.id%>';
+        var user = '<%= user %>';
+        var roomId = '<%= room.id%>';
+        var peerConnections = {};
+        var socketConnection = io();
+        var createMessage = function(message){
+            return {'user': user, 'message': message, time: new Date(), room: roomId}
+        };
+        var negotiating
+        var calling = function(caller){
+            if(!caller) caller = user;
+            // create a peer connection
+            peerConnections[user] = rtcHelperFunctions.createPeerConnection();
+            var peerConnection = peerConnections[user];
 
-            $('#message-field').on('keypress', function(e){
-                if(e.which === 13 && this.value && this.value.trim()){
-                    var userMessage = {
-                        user: "<%= user %>",
-                        message: this.value,
-                        type: 'user-message',
-                        time: new Date()
-                    }
-                    socketConnection.send(JSON.stringify(userMessage));
-                    this.value = "";
-                }
-            });
-        }
+            // handle peer connection stuff
+            peerConnection.onaddStream = function(event){
+                var video = htmlHelper.appendVideoOnList(list,Math.random().toString(32).substring(2,8));
+                htmlHelper.setStreamOfVideo(video, event.streams[0]);
+            };
 
-        socketConnection.onerror = function(event){
-            console.warn(event.data);
-        }
-
-        socketConnection.onmessage = function(event){
-            if(event.data){
-                data = JSON.parse(event.data);
-                console.log(data);
-                // handle text messages
-                if(data.type === 'user-message'){
-                    $('#message-list').append($('<li class="user-message card"><div class="text">'+data.message+'</div><div class="time">'+dateformat(data.time)+'</div><div class="user">'+data.user+'</div></li>'));
-                }
-
-                // handle rtc sdp connections
-                if(data.type === 'client-refresh' && data.target === 'users'){
-                    (console.log(data.users));
-                    $('#user-list').html(data.users.map(function(user){ return '<li>'+user+'</li>'}));
-                }
+            // check if currently negotiating
+            peerConnection.onsignalingstatechange = function(){
+                negotiating = peerConnection.signalingState !== "stable";
             }
 
-        }
+            peerConnection.onnegotiationneeded = function(){
+                if(negotiating) return;
+                // create an offer and send it to the peer
+                rtcHelperFunctions.createLocalOffer(peerConnection)
+                    .then(function(sdp){
+                        var sdpMessage = createMessage(sdp);
+                        socketConnection.emit('sdp-message', sdpMessage);
+                    }).catch(console.log);
+            }
+
+            peerConnection.onicecandidate = function(event){
+                if(event.candidate){
+                    var candidateMessage = createMessage(event.candidate);
+                    socketConnection.emit('ice-message',candidateMessage);
+                }
+            };
+
+            return peerConnection;
+        };
+
+        // handle Socket stuff (chatting, real time data transfer to the server...)
+        socketConnection.on('connect', function(){
+            var welcome = createMessage("the user <%= user %> entered the room <%= room.name %>");
+            socketConnection.emit('enter-message', welcome);
+        });
+
+        socketConnection.on('error', function(event){
+            console.log(event.data);
+        });
+
+        socketConnection.on('user-message', function(data){
+            htmlHelper.appendMessageOnList('#message-list', data.message, data.user, data.time);
+        });
+
+        socketConnection.on('enter-message', function(data){
+            htmlHelper.appendMessageOnList('#message-list',data.message, data.user, data.time);
+            htmlHelper.setUsersOnList('#user-list', data.users);
+        });
+
+        socketConnection.on('leave-message', function(data){
+            htmlHelper.appendMessageOnList('#message-list',data.message, data.user, data.time);
+            htmlHelper.setUsersOnList('#user-list', data.users);
+        });
+
+        socketConnection.on('sdp-message', function(data){
+            if(data.user === user) return;
+            if(data.message.type === "offer"){
+                rtcHelperFunctions.getCameraStream().then(function(stream){
+                    var peerConnection = calling(data.user);
+                    peerConnection.addStream(stream);
+                    rtcHelperFunctions.handleRemoteOffer(peerConnection, data.message)
+                        .then(function (sdp) {
+                            console.log('created sdp answer',sdp);
+                            var sdpMessage = createMessage(sdp);
+                            socketConnection.emit('sdp-message', sdpMessage);
+                        }).catch(console.log);
+                });
+            }else if(data.message.type === "answer"){
+                var peerConnection = peerConnections[user];
+                rtcHelperFunctions.handleRemoteAnswer(peerConnection, data.message)
+                    .then(function(){
+                        console.log('set remote answer')
+                    }).catch(console.log)
+            }
+
+        });
+
+        socketConnection.on('ice-message', function(data){
+            if(data.user === user) return;
+            peerConnections[user].addIceCandidate(new RTCIceCandidate(data.message))
+                .then(function(){
+                    console.log('added candidate',data.message);
+                }).catch(console.log);
+        });
+
+
+        // bind events on input elements
+        $('#message-field').on('keypress', function(event){
+            if(event.which === 13 && this.value && this.value.trim()){
+                var userMessage = createMessage(this.value.trim());
+                socketConnection.emit('user-message', userMessage);
+                this.value = "";
+            }
+        });
+
+        $('#call-button').on('click', function(){
+            rtcHelperFunctions.getCameraStream()
+                .then(function(stream){
+                    var peerConnection = calling();
+                    // add the local stream to the peer connection
+                    peerConnection.addStream(stream);
+
+                    // create SDP offer
+                })
+                .catch(console.log);
+        });
 
         $(window).on('beforeunload', function(){
-            socketConnection.send(JSON.stringify({
-                user: "<%= user %>",
-                message: "user <%= user %> has left the room <%= room.name %>",
-                type: 'leave-message',
-                time: new Date()
-            }))
+            var bye = createMessage("user <%= user %> has left the room <%= room.name %>");
+            socketConnection.emit('leave-message', bye);
         })
 
         })();
