@@ -11,7 +11,7 @@ module.exports = function sockets(io, rooms) {
         socket.on('enter-message', function(data){
             let room = Room.getRoomWithId(rooms, data.room);
             if(room){
-                if(!Room.hasRoomUserWithName(room, data.user)) Room.addUserToRoom(room, data.user);
+                if(!Room.hasRoomUserWithName(room, data._user)) Room.addUserToRoom(room, data._user);
                 socket.join(data.room);
                 data.users = room.users;
                 io.to(data.room).emit('enter-message', data);
@@ -22,7 +22,7 @@ module.exports = function sockets(io, rooms) {
         socket.on('leave-message', function(data){
             let room = Room.getRoomWithId(rooms, data.room);
             if(room) {
-                if(Room.hasRoomUserWithName(room, data.user)) Room.removeUserFromRoom(room, data.user);
+                if(Room.hasRoomUserWithName(room, data._user)) Room.removeUserFromRoom(room, data._user);
                 socket.leave(data.room);
                 data.users = room.users;
                 io.to(data.room).emit('leave-message', data);
@@ -39,9 +39,10 @@ module.exports = function sockets(io, rooms) {
             io.to(data.room).emit('ice-message', data);
         });
 
-        socket.on('user-message', function(data){
-            io.to(data.room).emit('user-message', data);
+        socket.on('_user-message', function(data){
+            io.to(data.room).emit('_user-message', data);
         });
+
     });
 };
 

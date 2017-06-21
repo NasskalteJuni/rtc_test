@@ -20,7 +20,7 @@ module.exports = function routes(app, rooms){
     app.get('/room/:id', function (req, res) {
         let id = parameter(req,'id');
         let room = Room.getRoomWithId(rooms, id);
-        let user = parameter(req,'user');
+        let user = parameter(req,'_user');
         let token = parameter(req,'token');
         let enter = parameter(req,'enter');
         if (room) {
@@ -48,6 +48,28 @@ module.exports = function routes(app, rooms){
             }
         } else {
             res.render('error.ejs', {
+                error: "No room with this id",
+                code: 404
+            })
+        }
+    });
+
+    app.get('/room/:id/others', function(req, res){
+        let id = parameter(req,'id');
+        let room = Room.getRoomWithId(rooms, id);
+        let user = parameter(req,'_user');
+        let token = parameter(req,'token');
+        if (room) {
+            if (Room.allowAccess(room, token)) {
+                res.json(Room.getOtherUsersOfRoom(room, user));
+            } else {
+                res.json({
+                    error: "invalid room token",
+                    code: 401
+                })
+            }
+        } else {
+            res.json({
                 error: "No room with this id",
                 code: 404
             })
@@ -111,7 +133,7 @@ module.exports = function routes(app, rooms){
                     code: 403
                 });
             } else {
-                res.redirect('/room/' + id + (token ? "?token=" + token + "&" : "?") + "user=" + user + "&enter=1");
+                res.redirect('/room/' + id + (token ? "?token=" + token + "&" : "?") + "_user=" + user + "&enter=1");
             }
         } else if (user) {
             res.render('error.ejs', {

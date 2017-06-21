@@ -19,10 +19,10 @@ var htmlHelper = (function($){
 
     var appendMessageOnList = function(list, text, user, time){
         var elem = $('' +
-            '<li class="user-message card">' +
+            '<li class="_user-message card">' +
             '   <div class="text">'+text+'</div>' +
             '   <div class="time">'+dateformat(time)+'</div>' +
-            '   <div class="user">'+user+'</div>' +
+            '   <div class="_user">'+user+'</div>' +
             '</li>');
         $(list).append(elem);
     };

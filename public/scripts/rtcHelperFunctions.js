@@ -21,7 +21,7 @@ var rtcHelperFunctions = (function(){
         return navigator.mediaDevices.getUserMedia({
             audio: true,
             video: {
-                facingMode: "user",
+                facingMode: "_user",
                 width: {
                     ideal: 640
                 },
@@ -33,28 +33,18 @@ var rtcHelperFunctions = (function(){
     };
 
     var createLocalOffer = function(peerConnection){
-        return new Promise(function (resolve, reject) {
-            peerConnection.createOffer()
-                .then(function(offer){
-                    peerConnection.setLocalDescription(offer);
-                    resolve(offer)
-                })
-                .catch(reject);
-        });
+        return peerConnection.createOffer()
+                .then(peerConnection.setLocalDescription)
+                .catch(console.log);
     };
 
     var handleRemoteOffer = function(peerConnection, offer){
-        return new Promise(function(resolve, reject){
-            peerConnection.setRemoteDescription(offer)
+        return peerConnection.setRemoteDescription(offer)
                 .then(function () {
-                    peerConnection.createAnswer()
-                        .then(function (answer) {
-                            peerConnection.setLocalDescription(answer);
-                            resolve(answer);
-                        })
-                        .catch(reject);
-                }).catch(reject);
-        });
+                    return peerConnection.createAnswer()
+                        .then(peerConnection.setLocalDescription)
+                        .catch(console.log);
+                }).catch(console.log);
     };
 
     var handleRemoteAnswer = function(peerConnection, answer){

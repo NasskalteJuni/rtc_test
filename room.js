@@ -10,8 +10,9 @@ const randomToken = require('./randomToken.js');
 const getRoomUserNumber = room => room ? room.users.length : 0;
 const getAllUserNumber = rooms => rooms.reduce((acc, room) => acc + getRoomUserNumber(room), 0);
 const hasRoomUserWithName = (room, name) => room && room.users.indexOf(name) >= 0;
+const getOtherUsersOfRoom = (room, name) => room.users.filter(user => user !== name);
 const addUserToRoom = (room, name) => room.users.push(name);
-const removeUserFromRoom = (room, name) => room.users = room.users.filter(user => name !== user)
+const removeUserFromRoom = (room, name) => room.users = room.users.filter(user => name !== user);
 const getRoomWithId = (rooms, id) => rooms.reduce((acc, val) => (val && val.id === id) ? val : acc, null);
 const createRoomId = (rooms, id) => (!id || getRoomWithId(rooms, id)) ? createRoomId(rooms, randomToken()) : id;
 const allowAccess = (room, token) => !room.token || room.token === token;
@@ -34,5 +35,6 @@ module.exports = {
     saveRooms: saveRooms,
     allowAccess: allowAccess,
     addUserToRoom: addUserToRoom,
-    removeUserFromRoom: removeUserFromRoom
+    removeUserFromRoom: removeUserFromRoom,
+    getOtherUsersOfRoom: getOtherUsersOfRoom
 };
