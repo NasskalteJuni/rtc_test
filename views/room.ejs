@@ -11,9 +11,8 @@
         <div class="online-users">
             Zur Zeit sind online:
             <ul id="user-list" class="undecorated">
-            <% var users = room.users.sort(function(a,b){ return a.localeCompare(b)}); %>
-            <% for(var i = 0; i < users.length; i++){ %>
-                <li> <%= users[i]%> </li>
+            <% for(var i = 0; i < room.users.length; i++){ %>
+                <li> <%= room.users[i]%> </li>
             <% } %>
             </ul>
         </div>
@@ -35,9 +34,8 @@
         </div>
     </main>
     <script>
-        var url = 'ws://<%= server.address %>:<%= server.port %>/chat/<%=room.id%>';
+        var socketServerUrl = '<%= server.protocol.toLowerCase() === 'https' ? 'wss' : 'ws' %>://<%= server.address %>:<%= server.port %>/';
         var user = '<%= user %>';
-        var roomId = '<%= room.id%>';
     </script>
     <script src="/scripts/call.js"></script>
     </body>

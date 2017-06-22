@@ -14,6 +14,7 @@ class SocketConnectionManager{
      * @param url <String> the url of the socket connection server
      * */
     constructor(self, url){
+        console.log('created a socketConnectionManager for self='+self);
         if(!this._checkUser(self)) throw new Error("self must be a string identifier");
         this._connection = io.connect(url);                                             // the connection to the socket server, by socket io
         this._socketConnections = {};                                                   // dictionary for every connection with the user that is connected to as a key
@@ -26,10 +27,12 @@ class SocketConnectionManager{
      * @return socket connection to the user
      * */
     getSocketConnection(user=null){
-        if(!this._checkUser(user)) throw new Error("user musst be a string identifier");                                         // only strings as name / ID allowed
-        if(!this._socketConnections[user]) this._socketConnections[user] = new SocketConnection(this._connection);              // create a new connection if one does not exist already
-        this._socketConnections[user].user = user;                                                                              // set the user to which this connection goes
-        this._socketConnections[user].self = this._self;                                                                        // set oneself, from which user this direction comes
+        if(!this._checkUser(user)) throw new Error("user musst be a string identifier");                                        // only strings as name / ID allowed
+        if(!this._socketConnections[user]){
+            this._socketConnections[user] = new SocketConnection(this._connection);                                             // create a new connection if one does not exist already
+            this._socketConnections[user].setUser(user);                                                                        // set the user to which this connection goes
+            this._socketConnections[user].setSelf(this._self);
+        }                                                                                                                       // set oneself, from which user this direction comes
         return this._socketConnections[user];                                                                                   // return the connection belonging to the user
     }
 

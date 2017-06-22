@@ -3,11 +3,9 @@
  */
 const express = require('express');
 const bodyParser = require('body-parser');
-const Room = require('./room.js');
-
 
 // create an app and define some configurations
-module.exports = function application(rooms){
+module.exports = function application(room){
     // create new app
     const app = express();
 
@@ -17,20 +15,6 @@ module.exports = function application(rooms){
     app.set('view engine', 'ejs');
     app.use(express.static('public'));
 
-
-    // middleware for each call
-    app.use(function (req, res, next) {
-        // remove rooms that are older than 7 days
-        rooms = Room.activeRooms(rooms, 7);
-        // carry on
-        next();
-    });
-
-    // clearing function on shutdown
-    app.exit = function () {
-        rooms.forEach(room => room.users = []);
-        Room.saveRooms("rooms.json", rooms);
-    };
 
     return app;
 };

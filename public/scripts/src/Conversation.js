@@ -24,6 +24,62 @@ class Conversation{
         return Conversation._peerConnectionManager;
     }
 
+    /**
+     * Send a message that you entered the room
+     * @param self who am I
+     * @param server the server to send the broadcast to
+     * @param message the message to send upon entering the room
+     * */
+    static sendEnter(self, server, message){
+        Conversation._getSocketConnectionManager(self, server).getSocketConnection().sendEnter(message);
+    }
+
+    /**
+     * receive an Enter Message when someone enters the room
+     * @return Promise a Promise that resolves with a message and users, the users currently in the room
+     * */
+    static receiveEnter(self, server){
+        return Conversation._getSocketConnectionManager(self, server).getSocketConnection().receiveMessage();
+    }
+
+    /**
+     * Send a message that you left the room
+     * @param self who am I
+     * @param server the server to send the broadcast to
+     * @param message the message to send upon entering the room
+     * */
+    static sendLeave(self, server, message){
+        Conversation._getSocketConnectionManager(self, server).getSocketConnection().sendLeave(message);
+    }
+
+    /**
+     * receive a Leave Message when someone leaves the room
+     * @return Promise a Promise that resovles with a message and users, the users currently in the room
+     * */
+    static receiveLeave(self, server){
+        return Conversation._getSocketConnectionManager(self, server).getSocketConnection().receiveLeave();
+    }
+
+    /**
+     * Send some message to everyone in the room
+     * @param self who am I
+     * @param server the server to send the broadcast to
+     * @param message the message to send upon entering the room
+     * */
+    static sendBroadcast(self, server, message){
+        Conversation._getSocketConnectionManager(self, server).getSocketConnection().sendMessage(message);
+    }
+
+    /**
+     * Send some message to everyone in the room
+     * @param self who am I
+     * @param server the server to send the broadcast to
+     * @param message the message to send upon entering the room
+     * */
+    static receiveBroadcast(self, server){
+        return Conversation._getSocketConnectionManager(self, server).getSocketConnection().receiveMessage()
+    }
+
 
     /**
      * create a connection between this user, one self, and a remote user

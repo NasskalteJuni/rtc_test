@@ -2,149 +2,85 @@
  * Created by NasskalteJuni on 17.06.2017.
  */
 const config = require('./config.json');
+const querystring = require('querystring');
 const parameter = (req, name) => req.params[name] || req.query[name] || req.body[name];
-const randomToken = require('./randomToken.js');
-const Room = require('./room.js');
 
-module.exports = function routes(app, rooms){
+module.exports = function routes(app, room){
 
     // frontpage view
     app.get('/', function (req, res) {
-        res.render('index.ejs', {
-            rooms: rooms.sort((a, b) => a.name - b.name),
-            userCount: Room.getAllUserNumber(rooms)
-        });
+        // just go to name creation
+        res.redirect("/name");
     });
 
     // room view
-    app.get('/room/:id', function (req, res) {
-        let id = parameter(req,'id');
-        let room = Room.getRoomWithId(rooms, id);
-        let user = parameter(req,'_user');
-        let token = parameter(req,'token');
-        let enter = parameter(req,'enter');
-        if (room) {
-            if (Room.allowAccess(room, token)) {
-                if (enter && Room.hasRoomUserWithName(room, user)) {
-                    res.render('error.ejs', {
-                        error: "username already in use",
-                        code: 401
-                    });
-                } else {
-                    if (user && enter) {
-                        room.users.push(user);
-                    }
-                    res.render('room.ejs', {
-                        room: room,
-                        user: user,
-                        server: config.server
-                    });
-                }
-            } else {
-                res.render('error.ejs', {
-                    error: "invalid room token",
-                    code: 401
-                })
-            }
-        } else {
-            res.render('error.ejs', {
-                error: "No room with this id",
-                code: 404
-            })
+    app.get('/chat', function (req, res) {
+        let errors = [];
+        let username = querystring.unescape(parameter(req,'user'));             // check the request for a username
+        if(!username || username.trim().length === 0){
+            errors.push('you must give yourself a user name');                  // when no name is given, set this as an error
+        }else if(room.users.indexOf(parameter(req, username))  >= 0){
+            errors.push('username '+username+' already in use');                // when the name is already in use, this is also an error, since the name should be an ID
         }
-    });
 
-    app.get('/room/:id/others', function(req, res){
-        let id = parameter(req,'id');
-        let room = Room.getRoomWithId(rooms, id);
-        let user = parameter(req,'_user');
-        let token = parameter(req,'token');
-        if (room) {
-            if (Room.allowAccess(room, token)) {
-                res.json(Room.getOtherUsersOfRoom(room, user));
-            } else {
-                res.json({
-                    error: "invalid room token",
-                    code: 401
-                })
-            }
-        } else {
-            res.json({
-                error: "No room with this id",
-                code: 404
-            })
-        }
-    });
-
-    // room creation && going to the name creation
-    app.post('/room', function (req, res) {
-        if (req.body.name) {
-            let room = {
-                id: Room.createRoomId(rooms),
-                name: req.body.name,
-                description: req.body.description,
-                created: new Date(),
-                token: req.body.access === "private" ? randomToken() : null,
-                users: []
-            };
-            rooms.push(room);
-            res.render('name.ejs', {
+        if(!errors || errors.length === 0){                                     // If everything went fine, show the room
+            res.render('room.ejs', {
+                user: username,
                 room: room,
-                token: room.token,
-                isCreator: true
+                server: config.server
             });
-        } else {
-            res.render('error.ejs', {
-                error: 'no name given',
-                code: 400
-            });
+        }else{
+            let query = '?errors='+querystring.escape(JSON.stringify(errors));  // when someone tries to call room wih invalid parameters, send him back to the name creation
+            res.redirect('/name'+query);
         }
     });
 
     // name view
     app.get('/name', function (req, res) {
-        let id = parameter(req,'id');
-        let room = Room.getRoomWithId(rooms, id);
-        let token = parameter(req, 'token');
-        if (room) {
-            res.render('name.ejs', {
-                room: room,
-                token: token,
-                isCreator: false
-            });
-        } else {
-            res.render('error.ejs', {
-                error: 'no room found with this id',
-                code: 404
-            });
+        let errors = parameter(req, 'errors');                                  // check if the page was called with errors during 'login'
+        if(!errors){
+            errors = []                                                         // No errors --> empty error list
+        }else{
+            errors = JSON.parse(querystring.unescape(errors));                  // when the errors are send via querystring, decode them
         }
+        let username = parameter(req, 'user');                                  // name parameter that can be optionally in the query
+        if(!username){
+            username = "";                                                      // default is an empty name: page is visited first --> name is empty
+        }
+        res.render('name.ejs', {                                                // render the with a list of online users and a list of occured errors
+            errors: errors,
+            user: username,
+            users: room.users
+        });
     });
 
     // name creation & entering the room
     app.post('/name', function (req, res) {
-        let user = parameter(req,'name');
-        let id = parameter(req, 'room');
-        let room = Room.getRoomWithId(rooms, id);
-        let token = parameter(req,'token');
-        if (room && user) {
-            if (Room.hasRoomUserWithName(room, user)) {
-                res.render('error.ejs', {
-                    error: 'username already in use',
-                    code: 403
-                });
-            } else {
-                res.redirect('/room/' + id + (token ? "?token=" + token + "&" : "?") + "_user=" + user + "&enter=1");
-            }
-        } else if (user) {
-            res.render('error.ejs', {
-                error: 'no room found with this id',
-                code: 404
-            })
-        } else {
-            res.render('error.ejs', {
-                error: 'no username given',
-                code: 401
-            })
+        let errors = [];                                                        // prepare an array for errors that may happen during this 'login'
+        let username = parameter(req,'user');                                   // check the request for a username
+        if(!username || username.trim().length === 0){
+            errors.push('you must give yourself a user name');                  // when no name is given, set this as an error
+        }else if(room.users.indexOf(parameter(req, username))  >= 0){
+            errors.push('username '+username+' already in use');                // when the name is already in use, this is also an error, since the name should be an ID
+        }
+
+        if(errors.length === 0){
+            res.redirect("/chat?user="+querystring.escape(username));        // when everything is okay, redirect to the room page
+        }else{
+            errors.forEach(console.log);
+            res.render('name.ejs', {                                            // render the with a list of online users and a list of occured errors
+                errors: errors,
+                user: username,
+                users: room.users
+            });
         }
     });
+
+    // all routes not matched until now --> error 404
+    app.get('*', function(req, res){
+        res.render('error.ejs',{
+            code: 404,
+            error: 'Hier ist nichts, gehen sie weiter'
+        });
+    })
 };

@@ -6,31 +6,33 @@ const fs = require('fs');
 const application = require('./app.js');
 const routes = require('./routes.js');
 const sockets = require('./sockets.js');
-const Room = require('./room.js');
 const protocol = require(config.server.protocol);
 const port = config.server.port;
 
 
 // model
-const rooms = Room.loadRooms("rooms.json") || [];
+const room = {
+    name: 'chatroom',
+    users: []
+};
 
 // create an app by defining basic functionality and configurations
-const app = application(rooms);
+const app = application(room);
 
 // create a server of the given protocol
 const server = protocol.createServer({
     key: fs.readFileSync('tls/https_key.pem'),
     cert: fs.readFileSync('tls/https_cert.pem')
-},app);
+}, app);
 
 // define the routes and how to handle requests
-routes(app, rooms);
+routes(app, room);
 
 // define the socket io core
 const io = require('socket.io')(server);
 
 // define the sockets and how to handle real time data to the server
-sockets(io, rooms);
+sockets(io, room);
 
 // start the server on the given port
 server.listen(port, function() {
@@ -39,7 +41,6 @@ server.listen(port, function() {
 
 // handle shutdowns, etc.
 process.on('SIGINT',function(){
-    app.exit();
     process.exit();
 });
 

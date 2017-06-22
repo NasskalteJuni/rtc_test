@@ -12,18 +12,17 @@ class SocketConnection{
      * @param connection the connection to the socket server
      * */
     constructor(connection){
+        console.log('created a new SocketConnection');
         this._connection = connection;
         this._isBlocked = true;
     }
 
-
     /**
      * create a message that is understood by other socket endpoints and the socket server
-     * @param receiver who receives the message
      * @param data the payload of the message
      * @return object a message that can be send by this socket framework
      * */
-    static _createMessage(data){
+    _createMessage(data){
         return {
             'from': this._self,
             'to': this._user,
@@ -45,14 +44,15 @@ class SocketConnection{
      * @param user the user name / ID or null for broadcast
      * */
     setUser(user){
+        console.log('set target of socket connection user='+user);
         this._user = user;
     }
 
     /**
      * gets which user is set as oneself
-     * @param user the user name / ID
+     * @return user the user name / ID
      * */
-    getSelf(user){
+    getSelf(){
         return this._self;
     }
 
@@ -61,6 +61,7 @@ class SocketConnection{
      * @param user the user name / ID
      * */
     setSelf(user){
+        console.log('set self of socket connection self='+user);
         this._self = user;
     }
 
@@ -71,7 +72,7 @@ class SocketConnection{
      * */
     sendOffer(sessionDescription){
         return new Promise((resolve) => {
-            if(!this._isBlocked) this._connection.emit('offer-message', SocketConnection._createMessage(sessionDescription));
+            if(!this._isBlocked) this._connection.emit('offer-message', this._createMessage(sessionDescription));
             this._isBlocked = true;
             resolve();
         });
@@ -83,7 +84,7 @@ class SocketConnection{
      * */
     receiveOffer(){
         return new Promise((resolve) => {
-            this._connection.on('offer-message', function(message){
+            this._connection.on('offer-message', (message) => {
                 if(!this._isBlocked && (message.to === this._self || message.to === null)){
                     this._isBlocked = true;
                     resolve(message.data);
@@ -100,7 +101,7 @@ class SocketConnection{
     sendAnswer(sessionDescription){
         return new Promise((resolve) => {
             if(this._isBlocked){
-                this._connection.emit('answer-message', SocketConnection._createMessage(sessionDescription));
+                this._connection.emit('answer-message', this._createMessage(sessionDescription));
                 this._isBlocked = false;
                 resolve();
             }
@@ -113,7 +114,7 @@ class SocketConnection{
      * */
     receiveAnswer(){
         return new Promise((resolve) => {
-            this._connection.on('answer-message', function(message){
+            this._connection.on('answer-message', (message) => {
                 if(this._isBlocked && (message.to === this._self || message.to === null)){
                     this._isBlocked = false;
                     resolve(message.data);
@@ -129,7 +130,7 @@ class SocketConnection{
      * */
     sendMessage(data){
         return new Promise((resolve) => {
-            this._connection.emit('user-message', SocketConnection._createMessage(data));
+            this._connection.emit('user-message', this._createMessage(data));
             resolve();
         })
     }
@@ -140,8 +141,9 @@ class SocketConnection{
      * */
     receiveMessage(){
         return new Promise((resolve) => {
-            this._connection.on('user-message', function(message){
-                resolve(message.data);
+            this._connection.on('user-message', (message) => {
+                console.log('received user-message '+message.data)
+                resolve(message);
             });
         })
     }
@@ -152,7 +154,8 @@ class SocketConnection{
      * */
     sendCall(user){
         return new Promise((resolve) => {
-            this._connection.emit('call-message', SocketConnection._createMessage(user));
+            this._connection.emit('call-message', this._createMessage(user));
+            resolve();
         });
     }
 
@@ -162,12 +165,62 @@ class SocketConnection{
      * */
     receiveCall(){
         return new Promise((resolve) => {
-            this._connection.on('call-message', function(message){
+            this._connection.on('call-message', (message) => {
                 resolve({
                     receiver: message.data,
                     sender: message.from
                 });
             })
+        });
+    }
+
+    /**
+     * method primarily to use in broadcasts, when a user enters a room.
+     * this methods sends the given data to the users and should be invoked on connection to the room
+     * @param data the data to be send. this can be a string like 'hello users! user x connected to room'
+     * */
+    sendEnter(data){
+        this._connection.emit('enter-message', this._createMessage(data));
+    }
+
+    /**
+     * method that is invoked when an enter message is received
+     * @return a Promise that resolves with an Object with the message and users, the current users in the room
+     * */
+    receiveEnter(){
+        return new Promise((resolve) => {
+            this._connection.on('enter-message', (data) => {
+                console.log('enter', data);
+                resolve({
+                    message: data.message,
+                    users: data.users
+                });
+            })
+        });
+    }
+
+    /**
+     * method primarily to use in broadcasts, when a user leaves a room
+     * this method sends the given data to the users and should be invoked on connection to the room
+     * @param data the data to be send. this can be a string like 'user x left the room'
+     * */
+    sendLeave(data){
+        this._connection.emit('leave-message', this._createMessage(data));
+    }
+
+    /**
+     * method that is invoked when a leave-message is received
+     * @return a Promise that resolves with an Object with the message and users, the current users in the room
+     * */
+    receiveLeave(){
+        return new Promise((resolve) => {
+            this._connection.on('leave-message', function(data){
+                console.log('leave', data);
+                resolve({
+                    message: data.message,
+                    users: data.users
+                })
+            });
         });
     }
 
